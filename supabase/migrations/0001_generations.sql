@@ -16,40 +16,18 @@ create index if not exists idx_generations_provider on public.generations (provi
 
 alter table public.generations enable row level security;
 
-DO $$
-BEGIN
-  IF NOT EXISTS (
-    SELECT 1
-    FROM pg_policies
-    WHERE schemaname = 'public'
-      AND tablename = 'generations'
-      AND policyname = 'generations_select_authenticated'
-  ) THEN
-    CREATE POLICY "generations_select_authenticated"
-    ON public.generations
-    FOR SELECT
-    TO authenticated
-    USING (true);
-  END IF;
-END $$;
+-- Read policy for authenticated users
+create policy if not exists "generations_select_authenticated"
+on public.generations
+for select
+to authenticated
+using (true);
 
-DO $$
-BEGIN
-  IF NOT EXISTS (
-    SELECT 1
-    FROM pg_policies
-    WHERE schemaname = 'public'
-      AND tablename = 'generations'
-      AND policyname = 'generations_insert_authenticated'
-  ) THEN
-    CREATE POLICY "generations_insert_authenticated"
-    ON public.generations
-    FOR INSERT
-    TO authenticated
-    WITH CHECK (true);
-  END IF;
-END $$;
-
-grant select, insert on public.generations to authenticated;
+-- Insert policy for service role / authenticated users
+create policy if not exists "generations_insert_authenticated"
+on public.generations
+for insert
+to authenticated
+with check (true);
 
 comment on table public.generations is 'Metadata de generaciones de audio producidas por NovaBeat';
