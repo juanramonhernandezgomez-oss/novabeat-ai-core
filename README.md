@@ -5,8 +5,6 @@ Proyecto para generación de música con dos rutas:
 1. **Meta AudioCraft (MusicGen)** como referencia SOTA.
 2. **Pipeline propio 100% local** (sin conectarte a servicios externos), inspirado en ideas de MusicGen/Stable Audio: tokenización discreta + modelo autoregresivo.
 
-Además, incluye integración opcional con **Supabase** para guardar metadata de generaciones.
-
 ## Objetivo de esta iteración
 
 Implementar una base que puedas entrenar tú mismo localmente, reutilizando ideas de los modelos grandes pero sin depender de su inferencia remota.
@@ -32,7 +30,7 @@ La CLI usa subcomandos:
 ### 1) Referencia con Meta MusicGen
 
 ```bash
-novabeat-generate --supabase-url https://jqobhkmtazyprlddfvwe.supabase.co --supabase-key "$SUPABASE_KEY" meta-generate \
+novabeat-generate meta-generate \
   --prompt "Cinematic ambient con cuerdas y percusión tribal suave" \
   --output ./artifacts/meta.wav \
   --model-name facebook/musicgen-small \
@@ -53,25 +51,13 @@ novabeat-generate local-train \
 ### 3) Generación con modelo local entrenado
 
 ```bash
-novabeat-generate --supabase-url https://jqobhkmtazyprlddfvwe.supabase.co --supabase-key "$SUPABASE_KEY" local-generate \
+novabeat-generate local-generate \
   --model-in ./artifacts/local_model.json \
   --output ./artifacts/local_generated.wav \
-  --prompt "dark trap 140 bpm" \
   --seconds 10 \
   --temperature 1.0 \
   --top-k 64
 ```
-
-## Tabla esperada en Supabase
-
-Crea una tabla `generations` (o cambia `--supabase-table`) con columnas sugeridas:
-
-- `id` bigint generated always as identity primary key
-- `provider` text
-- `prompt` text
-- `output_file` text
-- `created_at` timestamptz
-- `extra` jsonb
 
 ## Cómo está hecho el pipeline local
 
@@ -80,10 +66,3 @@ Crea una tabla `generations` (o cambia `--supabase-table`) con columnas sugerida
 - `LocalTokenModel`: modelo autoregresivo n-gram con backoff + top-k sampling.
 
 Esto no copia pesos propietarios; es una implementación propia inspirada en la estrategia de tokenización/autoregresión que usan sistemas modernos.
-
-
-## Entidades de base de datos (Supabase)
-
-Sí, el siguiente paso es crear las entidades en la BBDD.
-Ya dejé una migración lista en `supabase/migrations/0001_generations.sql` y una guía rápida en `supabase/README.md`.
-

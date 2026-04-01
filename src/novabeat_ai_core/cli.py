@@ -5,25 +5,10 @@ from pathlib import Path
 
 from .audiocraft_engine import AudiocraftMusicGenerator, GenerationConfig
 from .local_pipeline import LocalMusicPipeline, LocalTrainingConfig
-from .supabase_store import SupabaseConfig, SupabaseGenerationStore
-
-
-def _maybe_store_to_supabase(args: argparse.Namespace, provider: str, prompt: str, output_file: Path, extra: dict) -> None:
-    if not args.supabase_url or not args.supabase_key:
-        return
-    store = SupabaseGenerationStore(
-        SupabaseConfig(url=args.supabase_url, key=args.supabase_key, table=args.supabase_table)
-    )
-    store.save_generation(provider=provider, prompt=prompt, output_file=output_file, extra=extra)
-    print("Registro guardado en Supabase")
 
 
 def generate_main() -> None:
     parser = argparse.ArgumentParser(description="NovaBeat CLI")
-    parser.add_argument("--supabase-url", default="")
-    parser.add_argument("--supabase-key", default="")
-    parser.add_argument("--supabase-table", default="generations")
-
     sub = parser.add_subparsers(dest="cmd", required=True)
 
     cloud = sub.add_parser("meta-generate", help="Generar con MusicGen (AudioCraft)")
@@ -49,7 +34,6 @@ def generate_main() -> None:
     local_gen = sub.add_parser("local-generate", help="Generar con modelo local entrenado")
     local_gen.add_argument("--model-in", type=Path, required=True)
     local_gen.add_argument("--output", type=Path, required=True)
-    local_gen.add_argument("--prompt", default="")
     local_gen.add_argument("--seconds", type=int, default=8)
     local_gen.add_argument("--temperature", type=float, default=1.0)
     local_gen.add_argument("--top-k", type=int, default=64)
@@ -72,13 +56,6 @@ def generate_main() -> None:
         generator = AudiocraftMusicGenerator(config=config)
         output = generator.generate_to_wav(prompt=args.prompt, output_path=args.output)
         print(f"Audio generado (Meta): {output}")
-        _maybe_store_to_supabase(
-            args,
-            provider="meta_audiocraft",
-            prompt=args.prompt,
-            output_file=output,
-            extra={"model_name": args.model_name, "duration": args.duration},
-        )
         return
 
     local_config = LocalTrainingConfig(
@@ -104,13 +81,6 @@ def generate_main() -> None:
         top_k=args.top_k,
     )
     print(f"Audio generado (local): {output}")
-    _maybe_store_to_supabase(
-        args,
-        provider="local_model",
-        prompt=args.prompt,
-        output_file=output,
-        extra={"model_in": str(args.model_in), "seconds": args.seconds},
-    )
 
 
 if __name__ == "__main__":
